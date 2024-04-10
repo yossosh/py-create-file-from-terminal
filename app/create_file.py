@@ -3,43 +3,46 @@ import sys
 from datetime import datetime
 
 
-def create_file(file_path):
-    content = []
-    print("Enter content line:")
-    while True:
-        line = input()
-        if line.lower() == 'stop':
-            break
-        content.append(line)
+def create_folder(args: list) -> str:
+    if "-d" not in args:
+        return ""
 
-    timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-    with open(file_path, 'a') as file:
-        file.write(timestamp + '\n')
-        for i, line in enumerate(content, start=1):
-            file.write(f"{i} {line}\n")
+    start_index = args.index("-d") + 1
+    end_index = args.index("-f") if "-f" in args[start_index:] else len(args)
+    paths = args[start_index:end_index]
+    path = os.path.join(*paths)
+
+    os.makedirs(path, exist_ok=True)
+    return path
 
 
-def main():
-    if '-d' in sys.argv:
-        directory_index = sys.argv.index('-d') + 1
-        directory_path = os.path.join(*sys.argv[directory_index:])
-        os.makedirs(directory_path, exist_ok=True)
-        print(f"Directory created: {directory_path}")
+def create_file(args: str) -> None:
+    if "-f" not in args:
+        return
 
-    if '-f' in sys.argv:
-        file_index = sys.argv.index('-f') + 1
-        file_name = sys.argv[file_index]
-        if '-d' in sys.argv:
-            file_path = os.path.join(directory_path, file_name)
-        else:
-            file_path = file_name
+    path = create_folder(args)
+    file_name = os.path.join(path, args[args.index("-f") + 1])
+    open_mode = "a" if os.path.exists(file_name) else "w"
 
-        if os.path.exists(file_path):
-            print(f"Appending to existing file: {file_path}")
-        else:
-            print(f"Creating new file: {file_path}")
+    with open(file_name, open_mode) as file:
+        if open_mode == "a":
+            file.write("\n")
 
-        create_file(file_path)
+        current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        file.write(f"{current_time}\n")
+
+        line_count = 0
+        while True:
+            line_count += 1
+            line_input = input("Enter content line: ")
+            if line_input == "stop":
+                break
+            file.write(f"{line_count} {line_input}\n")
+
+
+def main() -> None:
+    arguments = sys.argv
+    create_file(arguments)
 
 
 if __name__ == "__main__":
